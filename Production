@@ -1,0 +1,244 @@
+
+
+# 
+# ## 1.	Introduction of the dataset 
+# 
+# 
+
+# #### Data Exploration
+# This notebook provided the step by step process to analyze data from water injection to predict total fluid (Oil + water). Collection of data from Casabe Project. The project consists of a secondary oil recovery program in the middle Magdalena Valley (Casabe field) which will enable recovery of about 70 million barrels of oil, reaching a peak production of 20,000 barrels per day in 1988. It will also include; field development under association contracts between ECOPETROL and private oil companies, with a peak production of 16,500 barrels per day in 1988. ECOPETROL will also participate in this development, paying 50% of the cost of development. The project will further provide; a 290 km pipeline to move Occidental Association crude from Cano Limon in the LLanos across the Andes mountains to Rio Zulia where it will enter existing westward-bound pipelines. Figure 1
+
+# 
+# 
+
+# ## 2.	The target of the project
+
+# The purpose is to train the historic data of injection flow rate from a five spot waterflooding wells to recreate the total fluid produced (oil + water). F
+
+# ## 3.	Data Preprocessing
+
+# It was determined if the data is categorical or numeric. In our case, the data is numeric and continuous. The data has not binary attributes. Tabla 1 shows oil, gas, and water production. Table 2 shows water injections y well.
+
+# Data was incomplete, since date, injection flow rate. Additionally, data contained errors and inconsistency. Data was organized following the guidelines of the class.
+
+# In[8]:
+
+
+#Loading the required libraries
+import pandas as pd
+prod = pd.read_excel('/Users/jerjesporlles/Dropbox/data mining/Prod.xlsx')
+prod.head()
+
+
+# Table 1
+
+# In[3]:
+
+
+prod.info()
+
+
+# In[9]:
+
+
+win = pd.read_excel('/Users/jerjesporlles/Dropbox/data mining/Win.xlsx')
+win.head()
+
+
+# Table 2
+
+# In[10]:
+
+
+win.info()
+
+
+# From the information above, Data is not the same amount of data because the measurement dates are not the same. In other words, on the date the production is measured, the injection is not necessarily measured, which forced you to organize and clean the injection information.
+
+# In[11]:
+
+
+data = pd.read_csv('/Users/jerjesporlles/Dropbox/data mining/Pattern.csv')
+data.head()
+
+
+# In[14]:
+
+
+data.info()
+
+
+# In[12]:
+
+
+#Deleting columns with "zero" values.
+dataset=data.drop(columns=['Qwinj 0839-A1d','Qwinj 0451-B1i','Qwinj 0451-B2'])
+dataset.info()
+
+
+# In[ ]:
+
+
+
+
+
+# Data contains 70 injector wells, and one production well. Each injector well was separated for each layer. 
+
+# Data from production flow rate and water injection was integrated. Table 3. Data was organized following the guidelines of the class.
+# Data transformation was developed as normalization and aggregation of additional data when that data appears as a #NA.
+
+# In[13]:
+
+
+dataset.describe()
+
+
+# Table 3
+
+# ## 4. Training and test set
+
+# Now that we have our dataset ready, it was developed basic statistical analysis to understand what we are dealing with and gain some insights that will serve us during the interpretation step. Distributions also help us easily identify the presence of outliers.
+
+# In[14]:
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+# In[15]:
+
+
+corr = dataset.corr()
+sns.heatmap(corr, 
+            xticklabels=corr.columns.values,
+            yticklabels=corr.columns.values)
+plt.show()
+
+
+# Large number of variables are almost impossible to vialize with human eye, and the correlation matrix is of no use here. It is recomended to perform a Principal Component Analysis to investigate if it is possible to reduce the dimension of the dataset. 
+
+# ## 5.	Machine learning models, Parameters settings, Results & visualization
+
+# Machine learning models was developed by linear regression, decision tree regression, and ramdom forest.
+
+# In[16]:
+
+
+#Importing Data set
+x = dataset.iloc[:, 1:70].values
+y = dataset.iloc[:, 70].values
+
+
+# In[17]:
+
+
+# Split training and testing
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.25)
+
+
+# In[18]:
+
+
+#Feature scaling
+from sklearn.preprocessing import StandardScaler
+sc_x = StandardScaler() #Define the scaler
+x_train = sc_x.fit_transform(x_train) #Scale the train set
+x_test = sc_x.fit_transform(x_test) #Scale the test set
+
+
+# In[19]:
+
+
+from sklearn.linear_model import LinearRegression
+
+LRegr = LinearRegression()
+fit = LRegr.fit(x_train, y_train)
+
+y_pred = LRegr.predict(x_test)
+
+
+# ### Linear regression
+
+# In[20]:
+
+
+# Plot the results
+plt.figure()
+plt.scatter(y_test, y_pred, s=20, edgecolor="black",
+            c="darkorange", label="data")
+plt.xlabel("Real Data")
+plt.ylabel("Prediction")
+plt.title("Linear Regression")
+
+plt.show()
+
+# calculate MAE, MSE, RMSE
+from sklearn import metrics
+print(metrics.mean_absolute_error(y_test, y_pred))
+print(metrics.mean_squared_error(y_test, y_pred))
+print(np.sqrt(metrics.mean_squared_error(y_test, y_pred)))
+
+
+# ### Decision tree regression
+
+# In[21]:
+
+
+import numpy as np
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+import matplotlib.pyplot as plt
+
+# Fit regression model
+regr_1 = DecisionTreeRegressor(max_depth=20)
+regr_2 = RandomForestRegressor(n_estimators = 100, random_state = 0)
+fit1 = regr_1.fit(x_train, y_train)
+fit2 = regr_2.fit(x_train, y_train)
+
+# Predict
+y_pred1 = regr_1.predict(x_test)
+y_pred2 = regr_2.predict(x_test)
+
+
+# In[22]:
+
+
+# Plot the results
+plt.figure()
+plt.scatter(y_test, y_pred1, s=20, edgecolor="black",
+            c="green", label="data")
+plt.xlabel("Real Data")
+plt.ylabel("Prediction")
+plt.title("Decision Tree Regression")
+
+plt.show()
+
+# calculate MAE, MSE, RMSE
+from sklearn import metrics
+print(metrics.mean_absolute_error(y_test, y_pred1))
+print(metrics.mean_squared_error(y_test, y_pred1))
+print(np.sqrt(metrics.mean_squared_error(y_test, y_pred1)))
+
+
+# ### Ramdom Forest
+
+# In[23]:
+
+
+# Plot the results
+plt.figure()
+plt.scatter(y_test, y_pred2, s=20, edgecolor="black",
+            c="darkorange", label="data")
+plt.xlabel("Real Data")
+plt.ylabel("Prediction")
+plt.title("Radom Forest Regression")
+
+plt.show()
+
+# calculate MAE, MSE, RMSE
+from sklearn import metrics
+print(metrics.mean_absolute_error(y_test, y_pred2))
+print(metrics.mean_squared_error(y_test, y_pred2))
+print(np.sqrt(metrics.mean_squared_error(y_test, y_pred2)))
